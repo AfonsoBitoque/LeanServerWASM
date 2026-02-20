@@ -5,7 +5,7 @@
 # Prerequisites:
 #   • Lean 4 v4.27.0 (elan)
 #   • Emscripten SDK (emcc in PATH)
-#   • LeanServer built (lake build LeanServerPure in ../LeanServer6)
+#   • LeanServer (fetched by Lake as git dependency, or local at ../LeanServer6)
 #
 # Output: dist/lean_crypto.{js,wasm}
 # ──────────────────────────────────────────────────────────────
@@ -17,7 +17,15 @@ LEAN_INCLUDE="${LEAN_PREFIX}/include"
 LEAN_LIB="${LEAN_PREFIX}/lib/lean"
 
 # ── Paths ────────────────────────────────────────────────────
-LEANSERVER_IR="../LeanServer6/.lake/build/ir"
+# Auto-detect LeanServer IR: git dep (.lake/packages) or local path
+if [ -d ".lake/packages/LeanServer/.lake/build/ir" ]; then
+  LEANSERVER_IR=".lake/packages/LeanServer/.lake/build/ir"
+elif [ -d "../LeanServer6/.lake/build/ir" ]; then
+  LEANSERVER_IR="../LeanServer6/.lake/build/ir"
+else
+  echo "❌ Cannot find LeanServer IR files. Run 'lake build' first."
+  exit 1
+fi
 WASM_IR=".lake/build/ir"
 OUT_DIR="dist"
 

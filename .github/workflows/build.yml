@@ -14,12 +14,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Checkout LeanServer
-        uses: actions/checkout@v4
-        with:
-          repository: AfonsoBitoque/LeanServer
-          path: ../LeanServer6
-
       - name: Install system dependencies
         run: |
           sudo apt-get update
@@ -40,6 +34,9 @@ jobs:
           restore-keys: |
             lake-wasm-${{ runner.os }}-
 
+      - name: Fetch dependencies
+        run: lake update
+
       - name: Build Lean → C
         run: lake build
 
@@ -50,12 +47,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
-      - name: Checkout LeanServer
-        uses: actions/checkout@v4
-        with:
-          repository: AfonsoBitoque/LeanServer
-          path: ../LeanServer6
 
       - name: Install system dependencies
         run: |
@@ -81,6 +72,9 @@ jobs:
           key: lake-wasm-${{ runner.os }}-${{ hashFiles('lean-toolchain', 'lakefile.toml') }}
           restore-keys: |
             lake-wasm-${{ runner.os }}-
+
+      - name: Fetch dependencies
+        run: lake update
 
       - name: Build Lean → C
         run: lake build

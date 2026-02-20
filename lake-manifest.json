@@ -1,12 +1,15 @@
 {"version": "1.1.0",
  "packagesDir": ".lake/packages",
  "packages":
- [{"type": "path",
+ [{"url": "https://github.com/AfonsoBitoque/LeanServer",
+   "type": "git",
+   "subDir": null,
    "scope": "",
+   "rev": "66f53470971bb27636d7651e064a493104f78043",
    "name": "LeanServer",
    "manifestFile": "lake-manifest.json",
+   "inputRev": "main",
    "inherited": false,
-   "dir": "../LeanServer6",
    "configFile": "lakefile.toml"}],
  "name": "LeanServerWASM",
  "lakeDir": ".lake"}

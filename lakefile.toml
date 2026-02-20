@@ -4,7 +4,8 @@ defaultTargets = ["LeanServerWASM"]
 
 [[require]]
 name = "LeanServer"
-path = "../LeanServer6"
+git = "https://github.com/AfonsoBitoque/LeanServer"
+rev = "main"
 
 [[lean_lib]]
 name = "LeanServerWASM"
