@@ -1,0 +1,100 @@
+name: Build WASM
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  lean-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Checkout LeanServer
+        uses: actions/checkout@v4
+        with:
+          repository: AfonsoBitoque/LeanServer
+          path: ../LeanServer6
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgmp-dev
+
+      - name: Install Lean (elan)
+        run: |
+          curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> $GITHUB_PATH
+
+      - name: Cache Lake packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            .lake
+            ~/.elan/toolchains
+          key: lake-wasm-${{ runner.os }}-${{ hashFiles('lean-toolchain', 'lakefile.toml') }}
+          restore-keys: |
+            lake-wasm-${{ runner.os }}-
+
+      - name: Build Lean → C
+        run: lake build
+
+  wasm-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    needs: lean-build
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Checkout LeanServer
+        uses: actions/checkout@v4
+        with:
+          repository: AfonsoBitoque/LeanServer
+          path: ../LeanServer6
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgmp-dev
+
+      - name: Install Lean (elan)
+        run: |
+          curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> $GITHUB_PATH
+
+      - name: Setup Emscripten
+        uses: mymindstorm/setup-emsdk@v14
+        with:
+          version: '3.1.51'
+
+      - name: Cache Lake packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            .lake
+            ~/.elan/toolchains
+          key: lake-wasm-${{ runner.os }}-${{ hashFiles('lean-toolchain', 'lakefile.toml') }}
+          restore-keys: |
+            lake-wasm-${{ runner.os }}-
+
+      - name: Build Lean → C
+        run: lake build
+
+      - name: Build C → WASM
+        run: ./build_wasm.sh
+
+      - name: Upload WASM artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: lean-crypto-wasm
+          path: |
+            dist/lean_crypto.js
+            dist/lean_crypto.wasm
+            dist/lean_server_wasm.js
+            dist/index.html
+          retention-days: 30

@@ -1,0 +1,10 @@
+/.lake
+/build
+*.o
+*.olean
+*.ilean
+*.trace
+*.hash
+/dist/lean_crypto.js
+/dist/lean_crypto.wasm
+/wasm_out

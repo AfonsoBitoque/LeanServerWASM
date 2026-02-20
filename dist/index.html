@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LeanServer WASM — Verified Cryptography</title>
+  <style>
+    :root {
+      --bg: #0d1117;
+      --card: #161b22;
+      --border: #30363d;
+      --text: #e6edf3;
+      --muted: #8b949e;
+      --accent: #58a6ff;
+      --green: #3fb950;
+      --red: #f85149;
+      --mono: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+    .container { max-width: 960px; margin: 0 auto; padding: 2rem 1rem; }
+
+    header {
+      text-align: center;
+      margin-bottom: 2rem;
+      padding-bottom: 1.5rem;
+      border-bottom: 1px solid var(--border);
+    }
+    header h1 {
+      font-size: 2rem;
+      background: linear-gradient(135deg, var(--accent), var(--green));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 0.5rem;
+    }
+    header p { color: var(--muted); font-size: 0.95rem; }
+    .badge {
+      display: inline-block;
+      padding: 0.2rem 0.6rem;
+      border-radius: 1rem;
+      font-size: 0.75rem;
+      font-weight: 600;
+      margin: 0.3rem 0.2rem;
+    }
+    .badge-green { background: rgba(63,185,80,0.15); color: var(--green); border: 1px solid rgba(63,185,80,0.3); }
+    .badge-blue  { background: rgba(88,166,255,0.15); color: var(--accent); border: 1px solid rgba(88,166,255,0.3); }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+    .card h2 {
+      font-size: 1.1rem;
+      color: var(--accent);
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .card h2 .icon { font-size: 1.3rem; }
+
+    label {
+      display: block;
+      font-size: 0.85rem;
+      color: var(--muted);
+      margin-bottom: 0.3rem;
+      margin-top: 0.8rem;
+    }
+    label:first-child { margin-top: 0; }
+
+    input, textarea {
+      width: 100%;
+      padding: 0.6rem 0.8rem;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 0.85rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    input:focus, textarea:focus { border-color: var(--accent); }
+    textarea { resize: vertical; min-height: 60px; }
+
+    button {
+      margin-top: 1rem;
+      padding: 0.6rem 1.5rem;
+      background: var(--accent);
+      color: var(--bg);
+      border: none;
+      border-radius: 6px;
+      font-weight: 600;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+    button:hover { opacity: 0.85; }
+    button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .result {
+      margin-top: 0.8rem;
+      padding: 0.8rem;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-family: var(--mono);
+      font-size: 0.8rem;
+      word-break: break-all;
+      white-space: pre-wrap;
+      min-height: 2rem;
+    }
+    .result.success { border-color: var(--green); }
+    .result.error   { border-color: var(--red); color: var(--red); }
+
+    .timing {
+      font-size: 0.75rem;
+      color: var(--muted);
+      margin-top: 0.3rem;
+    }
+
+    #status {
+      text-align: center;
+      padding: 1rem;
+      font-size: 0.95rem;
+    }
+    #status.loading { color: var(--accent); }
+    #status.ready   { color: var(--green); }
+    #status.error   { color: var(--red); }
+
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+    @media (max-width: 700px) { .grid { grid-template-columns: 1fr; } }
+
+    footer {
+      text-align: center;
+      margin-top: 2rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--border);
+      color: var(--muted);
+      font-size: 0.8rem;
+    }
+    footer a { color: var(--accent); text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>🔐 LeanServer WASM</h1>
+      <p>Verified cryptography compiled from Lean 4 to WebAssembly</p>
+      <div>
+        <span class="badge badge-green">914 theorems</span>
+        <span class="badge badge-green">0 sorry</span>
+        <span class="badge badge-blue">Lean 4 → C → WASM</span>
+        <span class="badge badge-blue">Pure functional</span>
+      </div>
+    </header>
+
+    <div id="status" class="loading">⏳ Loading WASM module...</div>
+
+    <div id="demos" style="display:none">
+      <!-- SHA-256 -->
+      <div class="card">
+        <h2><span class="icon">🔑</span> SHA-256</h2>
+        <label for="sha-input">Input text</label>
+        <input type="text" id="sha-input" value="hello" placeholder="Text to hash">
+        <button onclick="runSHA256()">Hash</button>
+        <div id="sha-result" class="result"></div>
+        <div id="sha-timing" class="timing"></div>
+      </div>
+
+      <div class="grid">
+        <!-- HMAC-SHA-256 -->
+        <div class="card">
+          <h2><span class="icon">🛡️</span> HMAC-SHA-256</h2>
+          <label for="hmac-key">Key</label>
+          <input type="text" id="hmac-key" value="secret" placeholder="HMAC key">
+          <label for="hmac-msg">Message</label>
+          <input type="text" id="hmac-msg" value="hello world" placeholder="Message">
+          <button onclick="runHMAC()">Authenticate</button>
+          <div id="hmac-result" class="result"></div>
+          <div id="hmac-timing" class="timing"></div>
+        </div>
+
+        <!-- HKDF-Extract -->
+        <div class="card">
+          <h2><span class="icon">🔗</span> HKDF-Extract</h2>
+          <label for="hkdf-salt">Salt (hex)</label>
+          <input type="text" id="hkdf-salt" value="" placeholder="Empty = zero salt">
+          <label for="hkdf-ikm">Input Key Material</label>
+          <input type="text" id="hkdf-ikm" value="my secret key material" placeholder="IKM">
+          <button onclick="runHKDF()">Extract</button>
+          <div id="hkdf-result" class="result"></div>
+          <div id="hkdf-timing" class="timing"></div>
+        </div>
+      </div>
+
+      <!-- AES-128-GCM -->
+      <div class="card">
+        <h2><span class="icon">🔒</span> AES-128-GCM Encrypt / Decrypt</h2>
+        <div class="grid">
+          <div>
+            <label for="aes-key">Key (16 bytes hex)</label>
+            <input type="text" id="aes-key" value="000102030405060708090a0b0c0d0e0f">
+            <label for="aes-iv">IV (12 bytes hex)</label>
+            <input type="text" id="aes-iv" value="000102030405060708090a0b">
+          </div>
+          <div>
+            <label for="aes-aad">AAD (optional)</label>
+            <input type="text" id="aes-aad" value="" placeholder="Additional authenticated data">
+            <label for="aes-plaintext">Plaintext</label>
+            <input type="text" id="aes-plaintext" value="Hello from Lean 4!">
+          </div>
+        </div>
+        <button onclick="runAES()">Encrypt → Decrypt</button>
+        <label style="margin-top:1rem">Ciphertext + Tag (hex)</label>
+        <div id="aes-ct-result" class="result"></div>
+        <label>Decrypted</label>
+        <div id="aes-pt-result" class="result"></div>
+        <div id="aes-timing" class="timing"></div>
+      </div>
+
+      <!-- X25519 -->
+      <div class="card">
+        <h2><span class="icon">🤝</span> X25519 Key Exchange (Diffie-Hellman)</h2>
+        <p style="color:var(--muted);font-size:0.85rem;margin-bottom:1rem">
+          Generates two key pairs and computes a shared secret. Both sides derive the same value.
+        </p>
+        <button onclick="runX25519()">Generate Key Pair & Exchange</button>
+        <label>Alice's Public Key</label>
+        <div id="x25519-alice-pub" class="result"></div>
+        <label>Bob's Public Key</label>
+        <div id="x25519-bob-pub" class="result"></div>
+        <label>Shared Secret (Alice)</label>
+        <div id="x25519-shared-a" class="result"></div>
+        <label>Shared Secret (Bob)</label>
+        <div id="x25519-shared-b" class="result"></div>
+        <label>Match?</label>
+        <div id="x25519-match" class="result"></div>
+        <div id="x25519-timing" class="timing"></div>
+      </div>
+
+      <!-- TLS 1.3 Key Derivation -->
+      <div class="card">
+        <h2><span class="icon">📡</span> TLS 1.3 Key Derivation</h2>
+        <p style="color:var(--muted);font-size:0.85rem;margin-bottom:1rem">
+          Derives handshake keys from an X25519 shared secret + hello hash.
+          Exactly what TLS 1.3 (RFC 8446 §7) specifies.
+        </p>
+        <button onclick="runTLS()">Derive Handshake Keys</button>
+        <label>Server Key (16 bytes)</label>
+        <div id="tls-server-key" class="result"></div>
+        <label>Server IV (12 bytes)</label>
+        <div id="tls-server-iv" class="result"></div>
+        <label>Client Key (16 bytes)</label>
+        <div id="tls-client-key" class="result"></div>
+        <label>Client IV (12 bytes)</label>
+        <div id="tls-client-iv" class="result"></div>
+        <div id="tls-timing" class="timing"></div>
+      </div>
+
+      <!-- Huffman -->
+      <div class="card">
+        <h2><span class="icon">📦</span> Huffman Codec (HPACK RFC 7541)</h2>
+        <label for="huff-input">Input text</label>
+        <input type="text" id="huff-input" value="www.example.com" placeholder="Text to compress">
+        <button onclick="runHuffman()">Encode → Decode</button>
+        <label>Encoded (hex)</label>
+        <div id="huff-encoded" class="result"></div>
+        <label>Decoded</label>
+        <div id="huff-decoded" class="result"></div>
+        <label>Compression ratio</label>
+        <div id="huff-ratio" class="result"></div>
+        <div id="huff-timing" class="timing"></div>
+      </div>
+    </div>
+
+    <footer>
+      <p>
+        <a href="https://github.com/AfonsoBitoque/LeanServer">LeanServer</a>
+        — Verified HTTPS server in Lean 4 &nbsp;|&nbsp;
+        914 machine-checked theorems &nbsp;|&nbsp; Zero sorry
+      </p>
+      <p style="margin-top:0.5rem">
+        Built with <a href="https://lean-lang.org">Lean 4</a> +
+        <a href="https://emscripten.org">Emscripten</a>
+      </p>
+    </footer>
+  </div>
+
+  <script src="lean_crypto.js"></script>
+  <script>
+    let lc = null;
+    const enc = new TextEncoder();
+    const dec = new TextDecoder();
+
+    function toHex(arr) {
+      return Array.from(arr).map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+    function fromHex(s) {
+      const bytes = [];
+      for (let i = 0; i < s.length; i += 2)
+        bytes.push(parseInt(s.substr(i, 2), 16));
+      return new Uint8Array(bytes);
+    }
+
+    // ── Initialize WASM ────────────────────────────────────
+    LeanCrypto().then(mod => {
+      lc = mod;
+      document.getElementById('status').className = 'ready';
+      document.getElementById('status').textContent = '✅ WASM module loaded — ready!';
+      document.getElementById('demos').style.display = 'block';
+    }).catch(err => {
+      document.getElementById('status').className = 'error';
+      document.getElementById('status').textContent = '❌ Failed to load WASM: ' + err.message;
+    });
+
+    // ── Helpers ────────────────────────────────────────────
+    function callWasm(fn, args) {
+      const dataPtr = lc._malloc(args.length);
+      lc.HEAPU8.set(args, dataPtr);
+      const outLenPtr = lc._malloc(4);
+      const resPtr = fn(dataPtr, args.length, outLenPtr);
+      const totalLen = lc.HEAPU32[outLenPtr >> 2];
+      let result = new Uint8Array(0);
+      if (totalLen >= 4) {
+        const payloadLen = lc.HEAPU8[resPtr] |
+                          (lc.HEAPU8[resPtr+1] << 8) |
+                          (lc.HEAPU8[resPtr+2] << 16) |
+                          (lc.HEAPU8[resPtr+3] << 24);
+        if (payloadLen > 0 && payloadLen + 4 <= totalLen) {
+          result = new Uint8Array(lc.HEAPU8.buffer.slice(resPtr + 4, resPtr + 4 + payloadLen));
+        }
+      }
+      lc._js_free(resPtr);
+      lc._free(dataPtr);
+      lc._free(outLenPtr);
+      return result;
+    }
+
+    function callWasm2(fn, a, b) {
+      const aPtr = lc._malloc(a.length); lc.HEAPU8.set(a, aPtr);
+      const bPtr = lc._malloc(b.length); lc.HEAPU8.set(b, bPtr);
+      const outLenPtr = lc._malloc(4);
+      const resPtr = fn(aPtr, a.length, bPtr, b.length, outLenPtr);
+      const totalLen = lc.HEAPU32[outLenPtr >> 2];
+      let result = new Uint8Array(0);
+      if (totalLen >= 4) {
+        const payloadLen = lc.HEAPU8[resPtr] |
+                          (lc.HEAPU8[resPtr+1] << 8) |
+                          (lc.HEAPU8[resPtr+2] << 16) |
+                          (lc.HEAPU8[resPtr+3] << 24);
+        if (payloadLen > 0 && payloadLen + 4 <= totalLen) {
+          result = new Uint8Array(lc.HEAPU8.buffer.slice(resPtr + 4, resPtr + 4 + payloadLen));
+        }
+      }
+      lc._js_free(resPtr);
+      lc._free(aPtr); lc._free(bPtr); lc._free(outLenPtr);
+      return result;
+    }
+
+    function callWasm4(fn, a, b, c, d) {
+      const aPtr = lc._malloc(a.length); lc.HEAPU8.set(a, aPtr);
+      const bPtr = lc._malloc(b.length); lc.HEAPU8.set(b, bPtr);
+      const cPtr = lc._malloc(c.length); lc.HEAPU8.set(c, cPtr);
+      const dPtr = lc._malloc(d.length); lc.HEAPU8.set(d, dPtr);
+      const outLenPtr = lc._malloc(4);
+      const resPtr = fn(aPtr, a.length, bPtr, b.length, cPtr, c.length, dPtr, d.length, outLenPtr);
+      const totalLen = lc.HEAPU32[outLenPtr >> 2];
+      let result = new Uint8Array(0);
+      if (totalLen >= 4) {
+        const payloadLen = lc.HEAPU8[resPtr] |
+                          (lc.HEAPU8[resPtr+1] << 8) |
+                          (lc.HEAPU8[resPtr+2] << 16) |
+                          (lc.HEAPU8[resPtr+3] << 24);
+        if (payloadLen > 0 && payloadLen + 4 <= totalLen) {
+          result = new Uint8Array(lc.HEAPU8.buffer.slice(resPtr + 4, resPtr + 4 + payloadLen));
+        }
+      }
+      lc._js_free(resPtr);
+      lc._free(aPtr); lc._free(bPtr); lc._free(cPtr); lc._free(dPtr); lc._free(outLenPtr);
+      return result;
+    }
+
+    // ── Demo Functions ─────────────────────────────────────
+
+    function runSHA256() {
+      const input = document.getElementById('sha-input').value;
+      const t0 = performance.now();
+      const hash = callWasm(lc._js_sha256, enc.encode(input));
+      const dt = (performance.now() - t0).toFixed(2);
+      const el = document.getElementById('sha-result');
+      el.textContent = toHex(hash);
+      el.className = 'result success';
+      document.getElementById('sha-timing').textContent = `⏱ ${dt} ms`;
+    }
+
+    function runHMAC() {
+      const key = enc.encode(document.getElementById('hmac-key').value);
+      const msg = enc.encode(document.getElementById('hmac-msg').value);
+      const t0 = performance.now();
+      const mac = callWasm2(lc._js_hmac_sha256, key, msg);
+      const dt = (performance.now() - t0).toFixed(2);
+      const el = document.getElementById('hmac-result');
+      el.textContent = toHex(mac);
+      el.className = 'result success';
+      document.getElementById('hmac-timing').textContent = `⏱ ${dt} ms`;
+    }
+
+    function runHKDF() {
+      const saltHex = document.getElementById('hkdf-salt').value.trim();
+      const salt = saltHex ? fromHex(saltHex) : new Uint8Array(32);
+      const ikm = enc.encode(document.getElementById('hkdf-ikm').value);
+      const t0 = performance.now();
+      const prk = callWasm2(lc._js_hkdf_extract, salt, ikm);
+      const dt = (performance.now() - t0).toFixed(2);
+      const el = document.getElementById('hkdf-result');
+      el.textContent = toHex(prk);
+      el.className = 'result success';
+      document.getElementById('hkdf-timing').textContent = `⏱ ${dt} ms`;
+    }
+
+    function runAES() {
+      try {
+        const key = fromHex(document.getElementById('aes-key').value.trim());
+        const iv = fromHex(document.getElementById('aes-iv').value.trim());
+        const aadText = document.getElementById('aes-aad').value;
+        const aad = aadText ? enc.encode(aadText) : new Uint8Array(0);
+        const pt = enc.encode(document.getElementById('aes-plaintext').value);
+
+        const t0 = performance.now();
+        const ct = callWasm4(lc._js_aes_gcm_encrypt, key, iv, aad, pt);
+        const decrypted = callWasm4(lc._js_aes_gcm_decrypt, key, iv, aad, ct);
+        const dt = (performance.now() - t0).toFixed(2);
+
+        const ctEl = document.getElementById('aes-ct-result');
+        ctEl.textContent = toHex(ct);
+        ctEl.className = 'result success';
+
+        const ptEl = document.getElementById('aes-pt-result');
+        if (decrypted.length > 0) {
+          ptEl.textContent = dec.decode(decrypted);
+          ptEl.className = 'result success';
+        } else {
+          ptEl.textContent = '❌ Decryption failed (authentication error)';
+          ptEl.className = 'result error';
+        }
+        document.getElementById('aes-timing').textContent = `⏱ ${dt} ms (encrypt + decrypt)`;
+      } catch (e) {
+        document.getElementById('aes-ct-result').textContent = '❌ ' + e.message;
+        document.getElementById('aes-ct-result').className = 'result error';
+      }
+    }
+
+    function runX25519() {
+      const t0 = performance.now();
+
+      // Generate Alice's key pair
+      const alicePriv = new Uint8Array(32);
+      crypto.getRandomValues(alicePriv);
+      const alicePub = callWasm(lc._js_x25519_base, alicePriv);
+
+      // Generate Bob's key pair
+      const bobPriv = new Uint8Array(32);
+      crypto.getRandomValues(bobPriv);
+      const bobPub = callWasm(lc._js_x25519_base, bobPriv);
+
+      // Compute shared secrets
+      const sharedA = callWasm2(lc._js_x25519_scalarmult, alicePriv, bobPub);
+      const sharedB = callWasm2(lc._js_x25519_scalarmult, bobPriv, alicePub);
+
+      const dt = (performance.now() - t0).toFixed(2);
+
+      document.getElementById('x25519-alice-pub').textContent = toHex(alicePub);
+      document.getElementById('x25519-alice-pub').className = 'result success';
+      document.getElementById('x25519-bob-pub').textContent = toHex(bobPub);
+      document.getElementById('x25519-bob-pub').className = 'result success';
+
+      const hexA = toHex(sharedA);
+      const hexB = toHex(sharedB);
+      document.getElementById('x25519-shared-a').textContent = hexA;
+      document.getElementById('x25519-shared-a').className = 'result success';
+      document.getElementById('x25519-shared-b').textContent = hexB;
+      document.getElementById('x25519-shared-b').className = 'result success';
+
+      const matchEl = document.getElementById('x25519-match');
+      if (hexA === hexB) {
+        matchEl.textContent = '✅ Shared secrets match! Diffie-Hellman key exchange verified.';
+        matchEl.className = 'result success';
+      } else {
+        matchEl.textContent = '❌ Shared secrets do NOT match!';
+        matchEl.className = 'result error';
+      }
+      document.getElementById('x25519-timing').textContent =
+        `⏱ ${dt} ms (2 key gens + 2 scalar multiplications)`;
+    }
+
+    function runTLS() {
+      const t0 = performance.now();
+
+      // Generate a fake shared secret and hello hash
+      const sharedSecret = new Uint8Array(32);
+      crypto.getRandomValues(sharedSecret);
+      const helloHash = callWasm(lc._js_sha256, enc.encode('ClientHello+ServerHello'));
+
+      const keys = callWasm2(lc._js_tls_derive_handshake, sharedSecret, helloHash);
+      const dt = (performance.now() - t0).toFixed(2);
+
+      if (keys.length >= 56) {
+        document.getElementById('tls-server-key').textContent = toHex(keys.slice(0, 16));
+        document.getElementById('tls-server-key').className = 'result success';
+        document.getElementById('tls-server-iv').textContent = toHex(keys.slice(16, 28));
+        document.getElementById('tls-server-iv').className = 'result success';
+        document.getElementById('tls-client-key').textContent = toHex(keys.slice(28, 44));
+        document.getElementById('tls-client-key').className = 'result success';
+        document.getElementById('tls-client-iv').textContent = toHex(keys.slice(44, 56));
+        document.getElementById('tls-client-iv').className = 'result success';
+      } else {
+        document.getElementById('tls-server-key').textContent = '❌ Key derivation failed';
+        document.getElementById('tls-server-key').className = 'result error';
+      }
+      document.getElementById('tls-timing').textContent = `⏱ ${dt} ms`;
+    }
+
+    function runHuffman() {
+      const input = enc.encode(document.getElementById('huff-input').value);
+      const t0 = performance.now();
+      const encoded = callWasm(lc._js_huffman_encode, input);
+      const decoded = callWasm(lc._js_huffman_decode, encoded);
+      const dt = (performance.now() - t0).toFixed(2);
+
+      document.getElementById('huff-encoded').textContent = toHex(encoded);
+      document.getElementById('huff-encoded').className = 'result success';
+
+      const decodedStr = dec.decode(decoded);
+      document.getElementById('huff-decoded').textContent = decodedStr;
+      document.getElementById('huff-decoded').className = decoded.length > 0 ? 'result success' : 'result error';
+
+      const ratio = input.length > 0
+        ? ((1 - encoded.length / input.length) * 100).toFixed(1) + '% compression'
+        : 'N/A';
+      document.getElementById('huff-ratio').textContent =
+        `${input.length} → ${encoded.length} bytes (${ratio})`;
+      document.getElementById('huff-ratio').className = 'result success';
+      document.getElementById('huff-timing').textContent = `⏱ ${dt} ms (encode + decode)`;
+    }
+  </script>
+</body>
+</html>

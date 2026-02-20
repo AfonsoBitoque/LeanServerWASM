@@ -1,0 +1,12 @@
+name = "LeanServerWASM"
+version = "0.1.0"
+defaultTargets = ["LeanServerWASM"]
+
+[[require]]
+name = "LeanServer"
+path = "../LeanServer6"
+
+[[lean_lib]]
+name = "LeanServerWASM"
+roots = ["WasmAPI"]
+precompileModules = true
