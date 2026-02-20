@@ -124,6 +124,7 @@ emcc \
   -I "${LEAN_INCLUDE}" \
   -I wasm \
   -DLEAN_EMSCRIPTEN \
+  wasm/lean_runtime_wasm.c \
   wasm/wasm_glue.c \
   ${PURE_C_FILES} \
   -o "${OUT_DIR}/lean_crypto.js"

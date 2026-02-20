@@ -19,8 +19,10 @@
 
 /* ── Stubs for @[extern] functions not available in WASM ──────── */
 
-/* SideChannel.lean: secureZero (opaque, IO-only) */
-LEAN_EXPORT lean_obj_res lean_secure_zero(lean_obj_arg arr, lean_obj_arg w) {
+/* SideChannel.lean: secureZero (opaque secureZero : ByteArray → IO Unit)
+   Generated C signature: lean_object* lean_secure_zero(lean_object*)
+   The IO world token is optimized away in the generated C code. */
+LEAN_EXPORT lean_obj_res lean_secure_zero(lean_obj_arg arr) {
     /* In WASM we can't guarantee constant-time, just zero the bytes. */
     if (lean_is_exclusive(arr)) {
         lean_sarray_object *o = lean_to_sarray(arr);
@@ -30,6 +32,22 @@ LEAN_EXPORT lean_obj_res lean_secure_zero(lean_obj_arg arr, lean_obj_arg w) {
 }
 
 /* ── ByteArray conversion helpers ──────────────────────────────── */
+
+/* Forward declaration of WasmAPI module initializer */
+extern lean_obj_res initialize_LeanServerWASM_WasmAPI(uint8_t builtin);
+static int _wasm_initialized = 0;
+
+static void ensure_initialized(void) {
+    if (!_wasm_initialized) {
+        _wasm_initialized = 1;
+        lean_obj_res r = initialize_LeanServerWASM_WasmAPI(0);
+        if (lean_io_result_is_error(r)) {
+            fprintf(stderr, "WASM init failed\n");
+            abort();
+        }
+        lean_dec(r);
+    }
+}
 
 /**
  * Create a Lean ByteArray from a raw pointer + length.
@@ -93,6 +111,7 @@ extern lean_obj_res wasm_tls_derive_application(lean_obj_arg hs, lean_obj_arg hh
 
 EMSCRIPTEN_KEEPALIVE
 uint8_t *js_sha256(const uint8_t *data, size_t len, size_t *out_len) {
+    ensure_initialized();
     lean_obj_res arr = mk_byte_array(data, len);
     lean_obj_res result = wasm_sha256(arr);
     return export_byte_array(result, out_len);
@@ -104,6 +123,7 @@ EMSCRIPTEN_KEEPALIVE
 uint8_t *js_hmac_sha256(const uint8_t *key, size_t klen,
                          const uint8_t *msg, size_t mlen,
                          size_t *out_len) {
+    ensure_initialized();
     lean_obj_res k = mk_byte_array(key, klen);
     lean_obj_res m = mk_byte_array(msg, mlen);
     lean_obj_res result = wasm_hmac_sha256(k, m);
@@ -116,6 +136,7 @@ EMSCRIPTEN_KEEPALIVE
 uint8_t *js_hkdf_extract(const uint8_t *salt, size_t slen,
                           const uint8_t *ikm, size_t ilen,
                           size_t *out_len) {
+    ensure_initialized();
     lean_obj_res s = mk_byte_array(salt, slen);
     lean_obj_res i = mk_byte_array(ikm, ilen);
     lean_obj_res result = wasm_hkdf_extract(s, i);
@@ -130,6 +151,7 @@ uint8_t *js_aes_gcm_encrypt(const uint8_t *key, size_t klen,
                               const uint8_t *aad, size_t alen,
                               const uint8_t *pt, size_t ptlen,
                               size_t *out_len) {
+    ensure_initialized();
     lean_obj_res k = mk_byte_array(key, klen);
     lean_obj_res v = mk_byte_array(iv, ivlen);
     lean_obj_res a = mk_byte_array(aad, alen);
@@ -146,6 +168,7 @@ uint8_t *js_aes_gcm_decrypt(const uint8_t *key, size_t klen,
                               const uint8_t *aad, size_t alen,
                               const uint8_t *ct, size_t ctlen,
                               size_t *out_len) {
+    ensure_initialized();
     lean_obj_res k = mk_byte_array(key, klen);
     lean_obj_res v = mk_byte_array(iv, ivlen);
     lean_obj_res a = mk_byte_array(aad, alen);
@@ -158,6 +181,7 @@ uint8_t *js_aes_gcm_decrypt(const uint8_t *key, size_t klen,
 
 EMSCRIPTEN_KEEPALIVE
 uint8_t *js_x25519_base(const uint8_t *privkey, size_t len, size_t *out_len) {
+    ensure_initialized();
     lean_obj_res pk = mk_byte_array(privkey, len);
     lean_obj_res result = wasm_x25519_base(pk);
     return export_byte_array(result, out_len);
@@ -167,6 +191,7 @@ EMSCRIPTEN_KEEPALIVE
 uint8_t *js_x25519_scalarmult(const uint8_t *scalar, size_t slen,
                                 const uint8_t *point, size_t plen,
                                 size_t *out_len) {
+    ensure_initialized();
     lean_obj_res s = mk_byte_array(scalar, slen);
     lean_obj_res p = mk_byte_array(point, plen);
     lean_obj_res result = wasm_x25519_scalarmult(s, p);
@@ -177,6 +202,7 @@ uint8_t *js_x25519_scalarmult(const uint8_t *scalar, size_t slen,
 
 EMSCRIPTEN_KEEPALIVE
 uint8_t *js_bytes_to_hex(const uint8_t *data, size_t len, size_t *out_len) {
+    ensure_initialized();
     lean_obj_res arr = mk_byte_array(data, len);
     lean_obj_res result = wasm_bytes_to_hex(arr);
     return export_byte_array(result, out_len);
@@ -186,6 +212,7 @@ uint8_t *js_bytes_to_hex(const uint8_t *data, size_t len, size_t *out_len) {
 
 EMSCRIPTEN_KEEPALIVE
 uint8_t *js_hpack_decode(const uint8_t *data, size_t len, size_t *out_len) {
+    ensure_initialized();
     lean_obj_res arr = mk_byte_array(data, len);
     lean_obj_res result = wasm_hpack_decode(arr);
     return export_byte_array(result, out_len);
@@ -195,6 +222,7 @@ uint8_t *js_hpack_decode(const uint8_t *data, size_t len, size_t *out_len) {
 
 EMSCRIPTEN_KEEPALIVE
 uint8_t *js_huffman_encode(const uint8_t *data, size_t len, size_t *out_len) {
+    ensure_initialized();
     lean_obj_res arr = mk_byte_array(data, len);
     lean_obj_res result = wasm_huffman_encode(arr);
     return export_byte_array(result, out_len);
@@ -202,6 +230,7 @@ uint8_t *js_huffman_encode(const uint8_t *data, size_t len, size_t *out_len) {
 
 EMSCRIPTEN_KEEPALIVE
 uint8_t *js_huffman_decode(const uint8_t *data, size_t len, size_t *out_len) {
+    ensure_initialized();
     lean_obj_res arr = mk_byte_array(data, len);
     lean_obj_res result = wasm_huffman_decode(arr);
     return export_byte_array(result, out_len);
@@ -213,6 +242,7 @@ EMSCRIPTEN_KEEPALIVE
 uint8_t *js_tls_derive_handshake(const uint8_t *ss, size_t sslen,
                                    const uint8_t *hh, size_t hhlen,
                                    size_t *out_len) {
+    ensure_initialized();
     lean_obj_res s = mk_byte_array(ss, sslen);
     lean_obj_res h = mk_byte_array(hh, hhlen);
     lean_obj_res result = wasm_tls_derive_handshake(s, h);
@@ -223,6 +253,7 @@ EMSCRIPTEN_KEEPALIVE
 uint8_t *js_tls_derive_application(const uint8_t *hs, size_t hslen,
                                      const uint8_t *hh, size_t hhlen,
                                      size_t *out_len) {
+    ensure_initialized();
     lean_obj_res s = mk_byte_array(hs, hslen);
     lean_obj_res h = mk_byte_array(hh, hhlen);
     lean_obj_res result = wasm_tls_derive_application(s, h);
@@ -233,6 +264,7 @@ uint8_t *js_tls_derive_application(const uint8_t *hs, size_t hslen,
 
 EMSCRIPTEN_KEEPALIVE
 uint8_t *js_http2_parse_frame(const uint8_t *data, size_t len, size_t *out_len) {
+    ensure_initialized();
     lean_obj_res arr = mk_byte_array(data, len);
     lean_obj_res result = wasm_http2_parse_frame(arr);
     return export_byte_array(result, out_len);
