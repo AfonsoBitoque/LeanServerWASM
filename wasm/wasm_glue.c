@@ -12,6 +12,7 @@
  * where returned ptr points to a length-prefixed buffer in WASM memory.
  */
 
+#include <stdio.h>
 #include <lean/lean.h>
 #include <emscripten/emscripten.h>
 #include <string.h>
