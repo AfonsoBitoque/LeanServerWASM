@@ -121,10 +121,11 @@ emcc \
   -s FILESYSTEM=0 \
   -s ASSERTIONS=0 \
   -s ENVIRONMENT='web,worker' \
-  -I "${LEAN_INCLUDE}" \
   -I wasm \
+  -I "${LEAN_INCLUDE}" \
   -DLEAN_EMSCRIPTEN \
   wasm/lean_runtime_wasm.c \
+  wasm/init_stubs_wasm.c \
   wasm/wasm_glue.c \
   ${PURE_C_FILES} \
   -o "${OUT_DIR}/lean_crypto.js"

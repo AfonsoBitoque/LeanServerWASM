@@ -1048,38 +1048,32 @@ static lean_obj_res mk_io_error(const char *msg) {
     return r;
 }
 
-LEAN_EXPORT lean_obj_res lean_io_as_task(lean_obj_arg closure, lean_obj_arg prio, lean_obj_arg w) {
-    (void)prio; (void)w;
+LEAN_EXPORT lean_obj_res lean_io_as_task(lean_obj_arg closure, lean_obj_arg prio) {
+    (void)prio;
     /* Just execute synchronously */
     return lean_apply_1(closure, lean_box(0));
 }
 
-LEAN_EXPORT lean_obj_res lean_io_error_to_string(lean_obj_arg e, lean_obj_arg w) {
-    (void)w;
+LEAN_EXPORT lean_obj_res lean_io_error_to_string(lean_obj_arg e) {
     lean_dec(e);
     return lean_io_result_mk_ok(lean_mk_string("IO error (WASM)"));
 }
 
-LEAN_EXPORT lean_obj_res lean_io_get_random_bytes(lean_obj_arg n, lean_obj_arg w) {
-    (void)w;
-    size_t sz = lean_unbox(n);
-    lean_object *ba = lean_alloc_sarray(1, sz, sz);
-    memset(lean_sarray_cptr(ba), 0, sz); /* zeros — not cryptographically random */
+LEAN_EXPORT lean_obj_res lean_io_get_random_bytes(size_t n) {
+    lean_object *ba = lean_alloc_sarray(1, n, n);
+    memset(lean_sarray_cptr(ba), 0, n); /* zeros — not cryptographically random */
     return lean_io_result_mk_ok(ba);
 }
 
-LEAN_EXPORT lean_obj_res lean_io_mono_ms_now(lean_obj_arg w) {
-    (void)w;
+LEAN_EXPORT lean_obj_res lean_io_mono_ms_now(void) {
     return lean_io_result_mk_ok(lean_box(0));
 }
 
-LEAN_EXPORT lean_obj_res lean_io_mono_nanos_now(lean_obj_arg w) {
-    (void)w;
+LEAN_EXPORT lean_obj_res lean_io_mono_nanos_now(void) {
     return lean_io_result_mk_ok(lean_box(0));
 }
 
-LEAN_EXPORT lean_obj_res lean_io_read_dir(lean_obj_arg path, lean_obj_arg w) {
-    (void)w;
+LEAN_EXPORT lean_obj_res lean_io_read_dir(lean_obj_arg path) {
     lean_dec(path);
     return mk_io_error("filesystem not available in WASM");
 }
@@ -1166,6 +1160,16 @@ LEAN_EXPORT double lean_float_of_bits(uint64_t u) {
     return d;
 }
 
+LEAN_EXPORT double lean_float_of_nat(b_lean_obj_arg a) {
+    if (lean_is_scalar(a)) return (double)lean_unbox(a);
+    return 0.0; /* big nat */
+}
+
+LEAN_EXPORT uint8_t lean_uint8_of_big_nat(b_lean_obj_arg a) {
+    (void)a;
+    return 0; /* big nat → truncate to 0 */
+}
+
 /* Float array operations */
 LEAN_EXPORT lean_obj_res lean_float_array_mk(lean_obj_arg a) { lean_dec(a); return lean_alloc_sarray(sizeof(double), 0, 0); }
 LEAN_EXPORT lean_obj_res lean_float_array_data(lean_obj_arg a) { lean_dec(a); return lean_box(0); }
@@ -1210,6 +1214,11 @@ LEAN_EXPORT lean_obj_res initialize_Init_Data_Array(uint8_t builtin) {
 }
 
 LEAN_EXPORT lean_obj_res initialize_Std_Tactic_BVDecide(uint8_t builtin) {
+    (void)builtin;
+    return lean_io_result_mk_ok(lean_box(0));
+}
+
+LEAN_EXPORT lean_obj_res initialize_LeanServer_LeanServerPure(uint8_t builtin) {
     (void)builtin;
     return lean_io_result_mk_ok(lean_box(0));
 }
