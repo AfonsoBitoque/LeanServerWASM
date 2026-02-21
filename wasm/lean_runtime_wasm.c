@@ -1170,6 +1170,16 @@ LEAN_EXPORT uint8_t lean_uint8_of_big_nat(b_lean_obj_arg a) {
     return 0; /* big nat → truncate to 0 */
 }
 
+LEAN_EXPORT uint32_t lean_uint32_of_big_nat(b_lean_obj_arg a) {
+    (void)a;
+    return 0; /* big nat → truncate to 0 */
+}
+
+LEAN_EXPORT uint64_t lean_uint64_of_big_nat(b_lean_obj_arg a) {
+    (void)a;
+    return 0; /* big nat → truncate to 0 */
+}
+
 /* Float array operations */
 LEAN_EXPORT lean_obj_res lean_float_array_mk(lean_obj_arg a) { lean_dec(a); return lean_alloc_sarray(sizeof(double), 0, 0); }
 LEAN_EXPORT lean_obj_res lean_float_array_data(lean_obj_arg a) { lean_dec(a); return lean_box(0); }
