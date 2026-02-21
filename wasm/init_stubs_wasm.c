@@ -43,10 +43,21 @@ static lean_obj_res wasm_io_error(const char *msg) {
  *  1. Global Constants
  * ================================================================ */
 
-/* Array.empty = #[] (an empty Array) */
-lean_object *l_Array_empty;
+/* Array.empty is a FUNCTION in Lean IR (universe-polymorphic, takes type param).
+   Generated C declares: lean_object* l_Array_empty(lean_object*);
+   We cache the result for efficiency. */
+static lean_object *_cached_array_empty = NULL;
 
-/* ByteArray.empty = ByteArray.mk #[] */
+LEAN_EXPORT lean_object* l_Array_empty(lean_object* _type) {
+    if (_cached_array_empty == NULL) {
+        _cached_array_empty = lean_alloc_array(0, 0);
+        lean_mark_persistent(_cached_array_empty);
+    }
+    lean_inc(_cached_array_empty);
+    return _cached_array_empty;
+}
+
+/* ByteArray.empty = ByteArray.mk #[] (a global extern variable) */
 lean_object *l_ByteArray_empty;
 
 /* Default values for UInt types */
@@ -59,9 +70,11 @@ uint64_t l_instInhabitedUInt64 = 0;
    from ensure_initialized in wasm_glue.c */
 __attribute__((constructor))
 static void init_wasm_globals(void) {
-    /* Empty Array */
-    l_Array_empty = lean_alloc_array(0, 0);
-    lean_mark_persistent(l_Array_empty);
+    /* Prime l_Array_empty cache */
+    if (_cached_array_empty == NULL) {
+        _cached_array_empty = lean_alloc_array(0, 0);
+        lean_mark_persistent(_cached_array_empty);
+    }
 
     /* Empty ByteArray */
     l_ByteArray_empty = lean_alloc_sarray(1, 0, 0);
@@ -212,9 +225,6 @@ LEAN_EXPORT lean_object* l_Array_qpartition___redArg(lean_object *lt, lean_objec
     lean_dec(lt);
     return r;
 }
-
-/* Array.empty function variant (takes a type parameter) */
-/* Already defined as global l_Array_empty above. This is a function wrapper. */
 
 /* Array.mapMUnsafe.map */
 LEAN_EXPORT lean_object* l___private_Init_Data_Array_Basic_0__Array_mapMUnsafe_map___redArg(
